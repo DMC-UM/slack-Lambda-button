@@ -612,6 +612,11 @@ def display_gui() -> None:
     root.configure(bg=BLUE)
     root.title("Slack Lambda Button")
 
+    # redirect TKinter errors to tsprint
+    root.report_callback_exception = lambda exception, value, traceback: tsprint(
+        "".join(traceback.format_exception(exception, value, traceback))
+    )
+
     display_frame = tk.Frame(root, bg=BLUE)
     display_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
@@ -633,7 +638,7 @@ def display_gui() -> None:
     escape_label = ttk.Label(display_frame, text="Press escape to exit", style="Escape.TLabel")
     escape_label.place(relx=0.99, rely=0.99, anchor="se")
 
-    # Fade the escape label out
+    # Fade the escape label out after 1.5 seconds
     root.after(escape_display_period_ms, fade_label, root,
                escape_label, hex_to_rgb(MAIZE), hex_to_rgb(BLUE), 0, 1500)
 
@@ -642,6 +647,16 @@ def display_gui() -> None:
 
     # run
     root.mainloop()
+
+# for writing stdout/stderr to file
+class TSPrintWriter:
+    def write(self, message):
+        message = message.rstrip()
+        if message:
+            tsprint(message)
+
+    def flush(self):
+        pass
 
 if __name__ == "__main__":
     while True:
@@ -653,6 +668,9 @@ if __name__ == "__main__":
 
             log_name = f"logs/{now}.log"
             set_log_file(log_name)
+
+            sys.stdout = TSPrintWriter()
+            sys.stderr = TSPrintWriter()
 
             tsprint("Starting slack-Lambda-button gui.")
             process.set_process_name_linux()

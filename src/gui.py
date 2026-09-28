@@ -669,7 +669,6 @@ if __name__ == "__main__":
             log_name = f"logs/{now}.log"
             set_log_file(log_name)
 
-            sys.stdout = TSPrintWriter()
             sys.stderr = TSPrintWriter()
 
             tsprint("Starting slack-Lambda-button gui.")

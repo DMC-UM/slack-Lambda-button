@@ -605,6 +605,7 @@ def display_gui() -> None:
     # make a window
     root = tk.Tk()
     root.config(cursor="none")
+    root.wait_visibility() # can't grab until visible, so we wait
     root.focus_force()
     root.grab_set()
 

@@ -1,4 +1,5 @@
 {
     "webhook_url": "slack_webhook_url_here",
-    "bot_oauth_token": "slack_oauth_token_here"
+    "bot_oauth_token": "slack_oauth_token_here",
+    "error_channel": "slack_error_channel_id_here"
 }

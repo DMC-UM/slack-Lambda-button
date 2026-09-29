@@ -701,8 +701,21 @@ if __name__ == "__main__":
             display_gui()
             break
         except Exception:
-            tsprint(traceback.format_exc())
+            error_traceback = traceback.format_exc()
+
+            tsprint(error_traceback)
             tsprint(f"There was a problem running the program. Please see the traceback above for details. Retrying in 5 seconds.")
+
+            error_channel = slack.SLACK_CONFIG["error_channel"]
+            # send error message
+            if error_channel and error_channel != "":
+                aws.post_to_slack(
+                    slack.lambda_client,
+                    f"The help button has encountered an error:\n```{error_traceback}```",
+                    error_channel,
+                    slack.BUTTON_CONFIG["device_id"],
+                    True
+                )
 
             time.sleep(5)
 

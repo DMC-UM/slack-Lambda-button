@@ -607,7 +607,14 @@ def display_gui() -> None:
     root.config(cursor="none")
     root.wait_visibility() # can't grab until visible, so we wait
     root.focus_force()
-    root.grab_set()
+
+    # keep trying to give this window grab until it works (we need it for responsiveness)
+    def safe_grab():
+        try:
+            root.grab_set()
+        except:
+            tsprint("root.grab_set() failed, retrying in 100ms.")
+            root.after(100, lambda: safe_grab())
 
     root.attributes("-fullscreen", True)
     root.configure(bg=BLUE)

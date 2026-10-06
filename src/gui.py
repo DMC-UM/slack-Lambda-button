@@ -614,8 +614,8 @@ def display_gui() -> None:
     root.title("Slack Lambda Button")
 
     # redirect TKinter errors to tsprint
-    root.report_callback_exception = lambda exception, value, traceback: tsprint(
-        "".join(traceback.format_exception(exception, value, traceback))
+    root.report_callback_exception = lambda exception, value, tb: tsprint(
+        "".join(traceback.format_exception(exception, value, tb))
     )
 
     display_frame = tk.Frame(root, bg=BLUE)

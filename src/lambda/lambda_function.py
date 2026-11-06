@@ -7,9 +7,17 @@ Author:
 Nikki Hess (nkhess@umich.edu)
 """
 
+# built-in modules
+import time
 import json
 import requests
+import datetime
+
+# pip modules
 import boto3
+
+# my modules
+# import sheets
 
 # Read the configuration files
 try:
@@ -68,10 +76,15 @@ REQUESTS_SESSION.headers.update({
     "Content-Type": "application/json; charset=utf-8"
 })
 
+LAMBDA_RATE_LIMIT = 60 # can only post every 60 seconds
+last_pressed_dict = {}
+
 # cache
 USER_ID_TO_FIRST_NAME = {}
 CHANNEL_AND_MESSAGE_ID_TO_CONTENT: dict[dict[str, str]] = {}
 BOT_USER_ID = None
+
+# _, sheets_service, _, spreadsheet_id, tabs = sheets.setup_sheets()
 
 def lambda_handler(event: dict, context: object):
     """
@@ -228,6 +241,18 @@ def handle_message_replied(event: dict, reply_text: str) -> bool:
             pending_messages.remove(thread_ts)
 
             message_append(channel_id, thread_ts, "*(resolved)*")
+            
+            # cells = [
+            #     datetime.now().strftime("%B %d, %Y %I:%M:%S %p"),
+            #     message_to_device_id[thread_ts],
+            #     "Resolved"
+            # ]
+            # sheets.add_row(
+            #     sheets_service,
+            #     spreadsheet_id,
+            #     cells,
+            #     tabs["logging"]
+            # )
 
             SNS_CLIENT.publish(
                 TopicArn=SNS_ARN,
@@ -287,6 +312,18 @@ def handle_reaction_added(event: dict) -> bool:
                 "reply_text": reaction,
                 "reply_author": author_name
             }
+
+            # cells = [
+            #     datetime.now().strftime("%B %d, %Y %I:%M:%S %p"),
+            #     message_to_device_id[message_id],
+            #     "Resolved"
+            # ]
+            # sheets.add_row(
+            #     sheets_service,
+            #     spreadsheet_id,
+            #     cells,
+            #     tabs["logging"]
+            # )
 
             SNS_CLIENT.publish(
                 TopicArn=SNS_ARN,
@@ -419,6 +456,22 @@ def post_to_slack(channel_id: str, message: str, device_id: str, location: str):
         "channel": channel_id,
         "text": message
     }
+
+    now = time.time()
+    # check if the button has been pressed this Lambda run
+    if device_id in last_pressed_dict:
+        last_pressed = last_pressed_dict[device_id]
+        print("last pressed: " + str(last_pressed))
+        print("gap: " + str(now - last_pressed))
+        print("rate limit: " + str(LAMBDA_RATE_LIMIT))
+
+        # return invalid data on rate limit, that way if this is sent to a device
+        # that can handle this information, it will discard it (theoretically)
+        if now - last_pressed < LAMBDA_RATE_LIMIT:
+            return -1, -1
+    
+    # if the button doesn't exist in last pressed or we didn't hit the rate limit, update the last pressed time
+    last_pressed_dict[device_id] = now
 
     # 10 second timeout
     post_response = REQUESTS_SESSION.post(url, json=payload, timeout=5)

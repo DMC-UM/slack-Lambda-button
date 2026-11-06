@@ -11,7 +11,6 @@ Nikki Hess (nkhess@umich.edu)
 import time
 import json
 import requests
-import datetime
 
 # pip modules
 import boto3
@@ -131,18 +130,23 @@ def lambda_handler(event: dict, context: object):
     # there is a bug where subtype is currently missing when the event is
     # dispatched via the events API. until fixed, we need to verify that it has a thread_ts,
     # which is unique to message replies
+
+    # handle receiving a reply
     if event_type == "message" and event_body.get("thread_ts"):
         message = event_body.get("text")
         handle_message_replied(event_body, message)
+    # handle receiving a reaction
     elif event_type == "reaction_added":
         message = event_body.get("reaction", "")
         handle_reaction_added(event_body)
+    # handle receiving a request to post a message
     elif event_type == "post":
         channel_id = event_body.get("channel_id", "")
         message = event_body.get("message", "")
         device_id = event_body.get("device_id", "")
         location = event_body.get("location", "")
         posted_message_id, posted_message_channel = post_to_slack(channel_id, message, device_id, location)
+    # handle a message running out of time for a response
     elif event_type == "message_timeout":
         channel_id = event_body.get("channel_id", "")
         message_id = event_body.get("message_id", "")
